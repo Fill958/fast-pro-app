@@ -1,7 +1,6 @@
 """Агент дедлайнов: читает календарь Moodle и напоминает о сроках сдачи."""
 import asyncio
 import json
-import os
 from datetime import date, datetime, timedelta
 
 import aiohttp
