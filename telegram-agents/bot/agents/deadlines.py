@@ -5,14 +5,13 @@ import os
 from datetime import date, datetime, timedelta
 
 import aiohttp
-import anthropic
 from aiogram import Bot, F, Router
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from icalendar import Calendar
 
-from bot import config
+from bot import config, llm
 
 router = Router(name="deadlines")
 REMIND_DAYS = (3, 1)  # за сколько дней напоминать
@@ -74,8 +73,7 @@ async def cmd_deadlines(message: Message):
     await message.answer(text, reply_markup=kb)
 
 
-def ask_claude(d: dict) -> str:
-    client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
+def ask_advice(d: dict) -> str:
     prompt = (
         "Ты помощник студента. Дай короткий практичный план, как выполнить задание: "
         "3–5 шагов, с чего начать сегодня, сколько примерно времени заложить. "
@@ -83,17 +81,7 @@ def ask_claude(d: dict) -> str:
         f"Курс: {d['course']}\nЗадание: {d['title']}\n"
         f"Срок: {d['due']:%d.%m.%Y %H:%M}\nОписание из LMS:\n{d['description'][:4000]}"
     )
-    response = client.beta.messages.create(
-        model=config.CLAUDE_MODEL,
-        max_tokens=2000,
-        output_config={"effort": "low"},
-        betas=["server-side-fallback-2026-07-01"],
-        fallbacks="default",
-        messages=[{"role": "user", "content": prompt}],
-    )
-    if response.stop_reason == "refusal":
-        return "Не получилось составить совет по этому заданию."
-    return "".join(b.text for b in response.content if b.type == "text")
+    return llm.ask(prompt) or "Не получилось составить совет по этому заданию."
 
 
 @router.callback_query(F.data.startswith("advice:"))
@@ -104,7 +92,7 @@ async def on_advice(callback: CallbackQuery):
         return
     await callback.answer("Думаю…")
     d = _cache[idx]
-    advice = await asyncio.to_thread(ask_claude, d)
+    advice = await asyncio.to_thread(ask_advice, d)
     await callback.message.answer(f"💡 {d['title']}\n\n{advice}")
 
 

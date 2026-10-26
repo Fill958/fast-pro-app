@@ -8,7 +8,7 @@ from aiogram.types import Message
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from bot import config
-from bot.agents import deadlines, schedule
+from bot.agents import deadlines, mail, schedule
 
 dp = Dispatcher()
 # Бот личный: отвечаем только владельцу
@@ -25,7 +25,8 @@ async def cmd_start(message: Message):
         "/week — вся неделя\n\n"
         "📚 Учёба:\n"
         "/deadlines — ближайшие дедлайны из Moodle и советы по заданиям\n\n"
-        "Скоро здесь появится почта."
+        "📧 Почта:\n"
+        "/mail — новые письма из всех ящиков, по категориям"
     )
 
 
@@ -39,6 +40,9 @@ async def main():
     if config.MOODLE_ICAL_URL:
         dp.include_router(deadlines.router)
         deadlines.setup(bot, scheduler)
+    if config.MAIL_ACCOUNTS:
+        dp.include_router(mail.router)
+        mail.setup(bot, scheduler)
 
     scheduler.start()
     await schedule.plan_today_reminders(bot, scheduler)

@@ -18,3 +18,17 @@ MOODLE_ICAL_URL = os.getenv("MOODLE_ICAL_URL", "")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 CLAUDE_MODEL = os.getenv("CLAUDE_MODEL", "claude-opus-5-5")
 STATE_FILE = os.getenv("STATE_FILE", "state.json")
+
+# Почтовые ящики (IMAP). Пустые строки в .env — ящик пропускается.
+MAIL_ACCOUNTS = [
+    {"name": name, "host": os.getenv(f"{prefix}_IMAP_HOST", host),
+     "user": os.getenv(f"{prefix}_USER", ""), "password": os.getenv(f"{prefix}_PASSWORD", "")}
+    for name, prefix, host in [
+        ("Gmail", "GMAIL", "imap.gmail.com"),
+        ("Яндекс", "YANDEX", "imap.yandex.ru"),
+        ("ТПУ", "TPU", "mail.tpu.ru"),
+    ]
+    if os.getenv(f"{prefix}_USER")
+]
+MAIL_DIGEST_TIMES = os.getenv("MAIL_DIGEST_TIMES", "09:00,18:00").split(",")
+MAIL_STATE_FILE = os.getenv("MAIL_STATE_FILE", "mail_state.json")
